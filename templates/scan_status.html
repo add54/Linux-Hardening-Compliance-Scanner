@@ -1,0 +1,304 @@
+{% extends "base.html" %}
+
+{% block title %}Scan {{ scan.scan_id }} - Linux Security Scanner{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-12">
+            <!-- Scan Header -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <div class="row align-items-center">
+                        <div class="col">
+                            <h4 class="mb-0">
+                                <i class="bi bi-search me-2"></i>
+                                Scan {{ scan.scan_id }}
+                            </h4>
+                            <small class="text-muted">Profile: {{ scan.profile }}</small>
+                        </div>
+                        <div class="col-auto">
+                            {% if scan.status == 'completed' %}
+                                <span class="badge bg-success fs-6">Completed</span>
+                            {% elif scan.status == 'running' %}
+                                <span class="badge bg-primary fs-6">
+                                    <i class="bi bi-play-circle-fill me-1"></i>Running
+                                </span>
+                            {% elif scan.status == 'failed' %}
+                                <span class="badge bg-danger fs-6">Failed</span>
+                            {% elif scan.status == 'timeout' %}
+                                <span class="badge bg-warning fs-6">Timeout</span>
+                            {% else %}
+                                <span class="badge bg-secondary fs-6">{{ scan.status.title() }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <div class="h3 mb-1">{{ scan.compliance_score or 0 }}%</div>
+                                <div class="text-muted small">Compliance Score</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <div class="h3 mb-1">{{ scan.total_checks or 0 }}</div>
+                                <div class="text-muted small">Total Checks</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <div class="h3 mb-1 text-success">{{ scan.passed_checks or 0 }}</div>
+                                <div class="text-muted small">Passed</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <div class="h3 mb-1 text-danger">{{ scan.failed_checks or 0 }}</div>
+                                <div class="text-muted small">Failed</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if scan.duration %}
+                    <div class="row mt-3">
+                        <div class="col-12 text-center">
+                            <small class="text-muted">
+                                Scan completed in {{ scan.duration }} seconds
+                            </small>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Progress Bar (for running scans) -->
+            {% if is_active %}
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h6 class="card-title">
+                        <i class="bi bi-play-circle-fill text-primary me-2"></i>
+                        Scan in Progress
+                    </h6>
+                    <div class="progress mb-3">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary"
+                             role="progressbar" style="width: 100%">
+                            Running security checks...
+                        </div>
+                    </div>
+                    <p class="text-muted mb-0">
+                        The scan is currently running in the background. This page will automatically update when complete.
+                    </p>
+                    <div class="mt-3">
+                        <button class="btn btn-outline-primary btn-sm" onclick="refreshPage()">
+                            <i class="bi bi-arrow-clockwise me-1"></i>
+                            Refresh Status
+                        </button>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Results (for completed scans) -->
+            {% if scan.status == 'completed' and scan.total_checks %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-check-circle-fill me-2"></i>
+                        Scan Results
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <!-- Summary Cards -->
+                    <div class="row mb-4">
+                        <div class="col-md-3 mb-3">
+                            <div class="card bg-success text-white h-100">
+                                <div class="card-body text-center">
+                                    <i class="bi bi-check-circle-fill fs-1 mb-2"></i>
+                                    <h4 class="mb-1">{{ scan.passed_checks or 0 }}</h4>
+                                    <small>Passed Checks</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="card bg-danger text-white h-100">
+                                <div class="card-body text-center">
+                                    <i class="bi bi-x-circle-fill fs-1 mb-2"></i>
+                                    <h4 class="mb-1">{{ scan.failed_checks or 0 }}</h4>
+                                    <small>Failed Checks</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="card bg-warning text-white h-100">
+                                <div class="card-body text-center">
+                                    <i class="bi bi-exclamation-triangle-fill fs-1 mb-2"></i>
+                                    <h4 class="mb-1">{{ scan.warning_checks or 0 }}</h4>
+                                    <small>Warnings</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="card bg-secondary text-white h-100">
+                                <div class="card-body text-center">
+                                    <i class="bi bi-skip-forward-fill fs-1 mb-2"></i>
+                                    <h4 class="mb-1">{{ scan.skipped_checks or 0 }}</h4>
+                                    <small>Skipped</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Risk Level Badge -->
+                    {% if scan.risk_level %}
+                    <div class="text-center mb-4">
+                        <h5>Risk Assessment:
+                            <span class="badge fs-6 ms-2 bg-{{ 'danger' if scan.risk_level == 'CRITICAL' else 'warning' if scan.risk_level == 'HIGH' else 'info' if scan.risk_level == 'MEDIUM' else 'success' }}">
+                                {{ scan.risk_level }} RISK
+                            </span>
+                        </h5>
+                    </div>
+                    {% endif %}
+
+                    <!-- Actions -->
+                    <div class="text-center mb-4">
+                        {% if scan.output_file %}
+                        <a href="{{ url_for('download_result', filename=scan.output_file) }}" class="btn btn-primary me-2">
+                            <i class="bi bi-download me-1"></i>
+                            Download Full Report
+                        </a>
+                        {% endif %}
+                        <a href="{{ url_for('scan') }}" class="btn btn-outline-primary">
+                            <i class="bi bi-plus-circle me-1"></i>
+                            Start New Scan
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Scan Details -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-info-circle me-2"></i>
+                        Scan Details
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-sm">
+                                <tbody>
+                                    <tr>
+                                        <td class="fw-bold">Scan ID:</td>
+                                        <td><code>{{ scan.scan_id }}</code></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold">Profile:</td>
+                                        <td>
+                                            <span class="badge bg-secondary">{{ scan.profile }}</span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold">Status:</td>
+                                        <td>
+                                            {% if scan.status == 'completed' %}
+                                                <span class="badge bg-success">Completed</span>
+                                            {% elif scan.status == 'running' %}
+                                                <span class="badge bg-primary">Running</span>
+                                            {% elif scan.status == 'failed' %}
+                                                <span class="badge bg-danger">Failed</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">{{ scan.status.title() }}</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold">Started:</td>
+                                        <td>{{ scan.start_time or scan.created_at }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <table class="table table-sm">
+                                <tbody>
+                                    {% if scan.end_time %}
+                                    <tr>
+                                        <td class="fw-bold">Completed:</td>
+                                        <td>{{ scan.end_time }}</td>
+                                    </tr>
+                                    {% endif %}
+                                    {% if scan.duration %}
+                                    <tr>
+                                        <td class="fw-bold">Duration:</td>
+                                        <td>{{ scan.duration }} seconds</td>
+                                    </tr>
+                                    {% endif %}
+                                    {% if scan.compliance_score %}
+                                    <tr>
+                                        <td class="fw-bold">Compliance Score:</td>
+                                        <td>{{ scan.compliance_score }}%</td>
+                                    </tr>
+                                    {% endif %}
+                                    {% if scan.risk_level %}
+                                    <tr>
+                                        <td class="fw-bold">Risk Level:</td>
+                                        <td>
+                                            <span class="badge bg-{{ 'danger' if scan.risk_level == 'CRITICAL' else 'warning' if scan.risk_level == 'HIGH' else 'info' if scan.risk_level == 'MEDIUM' else 'success' }}">
+                                                {{ scan.risk_level }}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    {% endif %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Navigation -->
+            <div class="text-center mt-4">
+                <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary me-2">
+                    <i class="bi bi-house me-1"></i>
+                    Back to Dashboard
+                </a>
+                <a href="{{ url_for('results') }}" class="btn btn-outline-primary">
+                    <i class="bi bi-list me-1"></i>
+                    View All Results
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function refreshPage() {
+    location.reload();
+}
+
+// Auto-refresh for running scans
+{% if is_active %}
+setInterval(function() {
+    // Check if scan is still running
+    fetch('/api/scan/{{ scan.scan_id }}/status')
+        .then(response => response.json())
+        .then(data => {
+            if (data.status !== 'running') {
+                // Scan completed, refresh page
+                location.reload();
+            }
+        })
+        .catch(error => {
+            console.error('Error checking scan status:', error);
+        });
+}, 5000); // Check every 5 seconds
+{% endif %}
+</script>
+{% endblock %}

@@ -1,0 +1,274 @@
+{% extends "base.html" %}
+
+{% block title %}About - Linux Security Scanner{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <!-- Project Overview -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h3 class="card-title mb-0">
+                        <i class="bi bi-shield-check me-2"></i>
+                        Linux Hardening & Compliance Scanner
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <p class="lead">
+                        A comprehensive, enterprise-grade security scanner for Linux systems built with native Bash and modern web technologies.
+                    </p>
+
+                    <div class="row mt-4">
+                        <div class="col-md-6">
+                            <h5>Version Information</h5>
+                            <ul class="list-unstyled">
+                                <li><strong>Version:</strong> 1.0.0</li>
+                                <li><strong>Release Date:</strong> January 2026</li>
+                                <li><strong>Architecture:</strong> Bash + Python Flask</li>
+                                <li><strong>License:</strong> MIT</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h5>System Requirements</h5>
+                            <ul class="list-unstyled">
+                                <li><strong>OS:</strong> Linux (Ubuntu, CentOS, RHEL, etc.)</li>
+                                <li><strong>Shell:</strong> Bash 4.0+</li>
+                                <li><strong>Python:</strong> 3.6+ (for web interface)</li>
+                                <li><strong>Permissions:</strong> Root/sudo access</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Features -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h4 class="card-title mb-0">
+                        <i class="bi bi-star me-2"></i>
+                        Key Features
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6><i class="bi bi-search me-1"></i>Comprehensive Scanning</h6>
+                            <ul class="small">
+                                <li>Filesystem security audits</li>
+                                <li>System file permission validation</li>
+                                <li>SSH hardening checks</li>
+                                <li>SUID/SGID binary analysis</li>
+                            </ul>
+
+                            <h6 class="mt-3"><i class="bi bi-graph-up me-1"></i>Reporting & Analytics</h6>
+                            <ul class="small">
+                                <li>Multiple output formats (Text, JSON, CSV)</li>
+                                <li>Compliance scoring system</li>
+                                <li>Risk level assessment</li>
+                                <li>Historical trend analysis</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6><i class="bi bi-tools me-1"></i>Automation & Remediation</h6>
+                            <ul class="small">
+                                <li>Automated security fixes</li>
+                                <li>Custom remediation scripts</li>
+                                <li>Rollback capabilities</li>
+                                <li>Dry-run mode for testing</li>
+                            </ul>
+
+                            <h6 class="mt-3"><i class="bi bi-globe me-1"></i>Web Interface</h6>
+                            <ul class="small">
+                                <li>Modern responsive design</li>
+                                <li>Real-time scan monitoring</li>
+                                <li>Interactive dashboards</li>
+                                <li>REST API endpoints</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Security Checks Overview -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h4 class="card-title mb-0">
+                        <i class="bi bi-shield-check me-2"></i>
+                        Security Checks (23 Total)
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <h6>Filesystem Security</h6>
+                            <small class="text-muted">7 checks</small>
+                            <ul class="small mt-2">
+                                <li>World-writable files</li>
+                                <li>World-writable directories</li>
+                                <li>SUID/SGID binaries</li>
+                                <li>Critical file permissions</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-4">
+                            <h6>System Validation</h6>
+                            <small class="text-muted">9 checks</small>
+                            <ul class="small mt-2">
+                                <li>/etc/passwd permissions</li>
+                                <li>/etc/shadow permissions</li>
+                                <li>Empty password detection</li>
+                                <li>Duplicate UID/GID checks</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-4">
+                            <h6>SSH Hardening</h6>
+                            <small class="text-muted">7 checks</small>
+                            <ul class="small mt-2">
+                                <li>Root login disabled</li>
+                                <li>Password auth disabled</li>
+                                <li>MaxAuthTries limit</li>
+                                <li>Protocol version 2</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Architecture -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h4 class="card-title mb-0">
+                        <i class="bi bi-diagram-3 me-2"></i>
+                        Architecture
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Core Engine (Bash)</h6>
+                            <ul class="small">
+                                <li><code>scanner.sh</code> - Main scanner engine</li>
+                                <li><code>modules/</code> - Pluggable check modules</li>
+                                <li>Native Linux tools integration</li>
+                                <li>POSIX-compliant scripting</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Web Interface (Python Flask)</h6>
+                            <ul class="small">
+                                <li><code>app.py</code> - Flask web application</li>
+                                <li><code>templates/</code> - Jinja2 HTML templates</li>
+                                <li><code>static/</code> - CSS, JS, assets</li>
+                                <li>SQLite database backend</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="mt-3 p-3 bg-light rounded">
+                        <h6 class="mb-2">Why This Architecture?</h6>
+                        <p class="small mb-0">
+                            The scanner uses Bash for core security checks because it provides direct access to Linux system internals
+                            and doesn't require external dependencies. The Flask web interface adds modern usability while maintaining
+                            the robust Bash backend for actual security validation.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Compliance Standards -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h4 class="card-title mb-0">
+                        <i class="bi bi-award me-2"></i>
+                        Compliance Standards
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4 text-center">
+                            <div class="p-3 border rounded">
+                                <h5 class="text-primary">CIS</h5>
+                                <p class="small">Center for Internet Security benchmarks for secure configuration</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4 text-center">
+                            <div class="p-3 border rounded">
+                                <h5 class="text-success">NIST</h5>
+                                <p class="small">NIST 800-53 security controls for federal systems</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4 text-center">
+                            <div class="p-3 border rounded">
+                                <h5 class="text-warning">PCI-DSS</h5>
+                                <p class="small">Payment Card Industry Data Security Standards</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Getting Started -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h4 class="card-title mb-0">
+                        <i class="bi bi-rocket me-2"></i>
+                        Getting Started
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Quick Start</h6>
+                            <ol class="small">
+                                <li>Clone the repository</li>
+                                <li>Make scripts executable: <code>chmod +x scanner.sh</code></li>
+                                <li>Run basic scan: <code>./scanner.sh filesystem</code></li>
+                                <li>View results in terminal output</li>
+                            </ol>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Web Interface</h6>
+                            <ol class="small">
+                                <li>Install Python dependencies: <code>pip install -r requirements.txt</code></li>
+                                <li>Start web app: <code>python app.py</code></li>
+                                <li>Open browser to <code>http://localhost:5000</code></li>
+                                <li>Click "Start New Scan" to begin</li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Links and Resources -->
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title mb-0">
+                        <i class="bi bi-link-45deg me-2"></i>
+                        Links & Resources
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Project Resources</h6>
+                            <ul class="small">
+                                <li><a href="https://github.com/add54/Linux-Hardening-Compliance-Scanner" target="_blank">GitHub Repository</a></li>
+                                <li><a href="https://github.com/add54/Linux-Hardening-Compliance-Scanner/issues" target="_blank">Issue Tracker</a></li>
+                                <li><a href="https://github.com/add54/Linux-Hardening-Compliance-Scanner/wiki" target="_blank">Documentation Wiki</a></li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Security Standards</h6>
+                            <ul class="small">
+                                <li><a href="https://www.cisecurity.org/" target="_blank">CIS Security</a></li>
+                                <li><a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-53r5.pdf" target="_blank">NIST 800-53</a></li>
+                                <li><a href="https://www.pcisecuritystandards.org/" target="_blank">PCI Security Standards</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

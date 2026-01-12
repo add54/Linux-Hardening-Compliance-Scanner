@@ -1,0 +1,264 @@
+{% extends "base.html" %}
+
+{% block title %}New Scan - Linux Security Scanner{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <!-- Header -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h4 class="card-title mb-0">
+                        <i class="bi bi-search me-2"></i>
+                        Start New Security Scan
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-0">
+                        Configure and execute a comprehensive security scan of your Linux system.
+                        Choose from predefined profiles or create custom scan configurations.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Scan Configuration Form -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Scan Configuration</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" id="scanForm">
+                        <!-- Profile Selection -->
+                        <div class="mb-4">
+                            <label for="profile" class="form-label fw-bold">
+                                <i class="bi bi-diagram-3 me-1"></i>
+                                Scan Profile
+                            </label>
+                            <select class="form-select form-select-lg" id="profile" name="profile" required>
+                                <option value="filesystem">Filesystem Security</option>
+                                <option value="system">System Validation</option>
+                                <option value="ssh">SSH Hardening</option>
+                                <option value="full" selected>Full Security Audit</option>
+                                <option value="cis">CIS Benchmark</option>
+                                <option value="custom">Custom Profile</option>
+                            </select>
+                            <div class="form-text">
+                                Choose the type of security checks to perform.
+                            </div>
+                        </div>
+
+                        <!-- Profile Descriptions -->
+                        <div id="profileDescriptions" class="mb-4">
+                            <div id="filesystem-desc" class="profile-desc" style="display: none;">
+                                <div class="alert alert-info">
+                                    <h6><i class="bi bi-folder me-1"></i>Filesystem Security Profile</h6>
+                                    <p class="mb-0">Audits file permissions, ownership, and security settings including world-writable files, SUID/SGID binaries, and critical system file permissions.</p>
+                                </div>
+                            </div>
+                            <div id="system-desc" class="profile-desc" style="display: none;">
+                                <div class="alert alert-info">
+                                    <h6><i class="bi bi-shield-check me-1"></i>System Validation Profile</h6>
+                                    <p class="mb-0">Validates critical system file permissions (/etc/passwd, /etc/shadow, /etc/group, /etc/sudoers) and checks for security misconfigurations.</p>
+                                </div>
+                            </div>
+                            <div id="ssh-desc" class="profile-desc" style="display: none;">
+                                <div class="alert alert-info">
+                                    <h6><i class="bi bi-terminal me-1"></i>SSH Hardening Profile</h6>
+                                    <p class="mb-0">Audits SSH daemon configuration for security best practices including root login, password authentication, and protocol settings.</p>
+                                </div>
+                            </div>
+                            <div id="full-desc" class="profile-desc">
+                                <div class="alert alert-success">
+                                    <h6><i class="bi bi-check-circle-fill me-1"></i>Full Security Audit Profile</h6>
+                                    <p class="mb-0">Comprehensive security assessment covering all available checks across filesystem, system, and SSH security domains.</p>
+                                </div>
+                            </div>
+                            <div id="cis-desc" class="profile-desc" style="display: none;">
+                                <div class="alert alert-warning">
+                                    <h6><i class="bi bi-award me-1"></i>CIS Benchmark Profile</h6>
+                                    <p class="mb-0">Center for Internet Security benchmark compliance checks. Requires populated configuration files.</p>
+                                </div>
+                            </div>
+                            <div id="custom-desc" class="profile-desc" style="display: none;">
+                                <div class="alert alert-secondary">
+                                    <h6><i class="bi bi-gear me-1"></i>Custom Profile</h6>
+                                    <p class="mb-0">User-defined security checks from custom configuration. Requires custom profile setup.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Output Format -->
+                        <div class="mb-4">
+                            <label for="output_format" class="form-label fw-bold">
+                                <i class="bi bi-file-earmark-text me-1"></i>
+                                Output Format
+                            </label>
+                            <select class="form-select" id="output_format" name="output_format">
+                                <option value="text" selected>Text (Human Readable)</option>
+                                <option value="json">JSON (Machine Readable)</option>
+                                <option value="csv">CSV (Spreadsheet)</option>
+                            </select>
+                            <div class="form-text">
+                                Choose how scan results should be formatted and displayed.
+                            </div>
+                        </div>
+
+                        <!-- Advanced Options -->
+                        <div class="mb-4">
+                            <h6 class="fw-bold mb-3">
+                                <i class="bi bi-sliders me-1"></i>
+                                Advanced Options
+                            </h6>
+
+                            <!-- Fix Mode -->
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="checkbox" id="fix_mode" name="fix_mode">
+                                <label class="form-check-label" for="fix_mode">
+                                    <strong>Enable Automatic Remediation</strong>
+                                </label>
+                                <div class="form-text">
+                                    Automatically attempt to fix identified security issues. Use with caution in production environments.
+                                </div>
+                            </div>
+
+                            <!-- Excluded Checks -->
+                            <div class="mb-3">
+                                <label for="excluded_checks" class="form-label">Exclude Specific Checks</label>
+                                <input type="text" class="form-control" id="excluded_checks" name="excluded_checks"
+                                       placeholder="e.g., FS-001,SYS-002,SSH-003">
+                                <div class="form-text">
+                                    Comma-separated list of check IDs to exclude from the scan.
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Scan Summary -->
+                        <div id="scanSummary" class="mb-4" style="display: none;">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h6 class="card-title">
+                                        <i class="bi bi-info-circle me-1"></i>
+                                        Scan Summary
+                                    </h6>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <p class="mb-1"><strong>Profile:</strong> <span id="summary-profile">Full Security Audit</span></p>
+                                            <p class="mb-1"><strong>Format:</strong> <span id="summary-format">Text</span></p>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <p class="mb-1"><strong>Remediation:</strong> <span id="summary-fix">Disabled</span></p>
+                                            <p class="mb-1"><strong>Estimated Time:</strong> <span id="summary-time">2-5 minutes</span></p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <button type="button" class="btn btn-outline-secondary me-md-2" onclick="resetForm()">
+                                <i class="bi bi-arrow-clockwise me-1"></i>
+                                Reset
+                            </button>
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="bi bi-play-circle-fill me-2"></i>
+                                Start Scan
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="bi bi-lightning me-1"></i>
+                        Quick Actions
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row g-2">
+                        <div class="col-md-4">
+                            <button type="button" class="btn btn-outline-primary w-100" onclick="quickScan('filesystem')">
+                                <i class="bi bi-folder me-1"></i>
+                                <small>Filesystem Only</small>
+                            </button>
+                        </div>
+                        <div class="col-md-4">
+                            <button type="button" class="btn btn-outline-success w-100" onclick="quickScan('ssh')">
+                                <i class="bi bi-terminal me-1"></i>
+                                <small>SSH Only</small>
+                            </button>
+                        </div>
+                        <div class="col-md-4">
+                            <button type="button" class="btn btn-outline-warning w-100" onclick="quickScan('system')">
+                                <i class="bi bi-shield me-1"></i>
+                                <small>System Only</small>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('profile').addEventListener('change', function() {
+    const profile = this.value;
+    const descriptions = document.querySelectorAll('.profile-desc');
+
+    // Hide all descriptions
+    descriptions.forEach(desc => desc.style.display = 'none');
+
+    // Show selected description
+    const selectedDesc = document.getElementById(profile + '-desc');
+    if (selectedDesc) {
+        selectedDesc.style.display = 'block';
+    }
+
+    // Update summary
+    updateScanSummary();
+});
+
+document.getElementById('output_format').addEventListener('change', updateScanSummary);
+document.getElementById('fix_mode').addEventListener('change', updateScanSummary);
+
+function updateScanSummary() {
+    const profile = document.getElementById('profile');
+    const outputFormat = document.getElementById('output_format');
+    const fixMode = document.getElementById('fix_mode');
+
+    const profileText = profile.options[profile.selectedIndex].text;
+    const formatText = outputFormat.options[outputFormat.selectedIndex].text;
+    const fixText = fixMode.checked ? 'Enabled' : 'Disabled';
+
+    document.getElementById('summary-profile').textContent = profileText;
+    document.getElementById('summary-format').textContent = formatText;
+    document.getElementById('summary-fix').textContent = fixText;
+
+    // Show summary
+    document.getElementById('scanSummary').style.display = 'block';
+}
+
+function quickScan(profile) {
+    document.getElementById('profile').value = profile;
+    document.getElementById('profile').dispatchEvent(new Event('change'));
+    document.getElementById('scanForm').submit();
+}
+
+function resetForm() {
+    document.getElementById('scanForm').reset();
+    document.getElementById('profile').dispatchEvent(new Event('change'));
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('profile').dispatchEvent(new Event('change'));
+});
+</script>
+{% endblock %}

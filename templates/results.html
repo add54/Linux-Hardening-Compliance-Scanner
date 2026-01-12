@@ -1,0 +1,348 @@
+{% extends "base.html" %}
+
+{% block title %}Scan Results - Linux Security Scanner{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2 class="mb-1">
+                        <i class="bi bi-file-earmark-text me-2"></i>
+                        Scan Results & History
+                    </h2>
+                    <p class="text-muted mb-0">View and manage all security scan results</p>
+                </div>
+                <a href="{{ url_for('scan') }}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle me-1"></i>
+                    New Scan
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters and Search -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label for="searchInput" class="form-label">Search Scans</label>
+                    <input type="text" class="form-control" id="searchInput" placeholder="Scan ID, profile, status...">
+                </div>
+                <div class="col-md-2">
+                    <label for="statusFilter" class="form-label">Status</label>
+                    <select class="form-select" id="statusFilter">
+                        <option value="">All Status</option>
+                        <option value="completed">Completed</option>
+                        <option value="running">Running</option>
+                        <option value="failed">Failed</option>
+                        <option value="timeout">Timeout</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="profileFilter" class="form-label">Profile</label>
+                    <select class="form-select" id="profileFilter">
+                        <option value="">All Profiles</option>
+                        <option value="filesystem">Filesystem</option>
+                        <option value="system">System</option>
+                        <option value="ssh">SSH</option>
+                        <option value="full">Full</option>
+                        <option value="cis">CIS</option>
+                        <option value="custom">Custom</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="riskFilter" class="form-label">Risk Level</label>
+                    <select class="form-select" id="riskFilter">
+                        <option value="">All Risks</option>
+                        <option value="LOW">Low</option>
+                        <option value="MEDIUM">Medium</option>
+                        <option value="HIGH">High</option>
+                        <option value="CRITICAL">Critical</option>
+                    </select>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="button" class="btn btn-outline-secondary w-100" onclick="clearFilters()">
+                        <i class="bi bi-x-circle me-1"></i>
+                        Clear
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results Table -->
+    <div class="card">
+        <div class="card-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                    Scan History ({{ total }} total)
+                </h5>
+                <div class="btn-group" role="group">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="exportResults('csv')">
+                        <i class="bi bi-file-earmark-spreadsheet me-1"></i>
+                        Export CSV
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="exportResults('json')">
+                        <i class="bi bi-file-earmark-code me-1"></i>
+                        Export JSON
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            {% if scans %}
+                <div class="table-responsive">
+                    <table class="table table-hover" id="resultsTable">
+                        <thead class="table-light">
+                            <tr>
+                                <th scope="col">
+                                    <input type="checkbox" id="selectAll" class="form-check-input">
+                                </th>
+                                <th scope="col">Scan ID</th>
+                                <th scope="col">Profile</th>
+                                <th scope="col">Status</th>
+                                <th scope="col">Score</th>
+                                <th scope="col">Risk</th>
+                                <th scope="col">Checks</th>
+                                <th scope="col">Duration</th>
+                                <th scope="col">Date</th>
+                                <th scope="col">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for scan in scans %}
+                            <tr data-scan-id="{{ scan.scan_id }}"
+                                data-profile="{{ scan.profile }}"
+                                data-status="{{ scan.status }}"
+                                data-risk="{{ scan.risk_level }}">
+                                <td>
+                                    <input type="checkbox" class="form-check-input scan-checkbox" value="{{ scan.scan_id }}">
+                                </td>
+                                <td>
+                                    <code class="text-muted">{{ scan.scan_id }}</code>
+                                </td>
+                                <td>
+                                    <span class="badge bg-secondary">{{ scan.profile }}</span>
+                                </td>
+                                <td>
+                                    {% if scan.status == 'completed' %}
+                                        <span class="badge bg-success">
+                                            <i class="bi bi-check-circle-fill me-1"></i>Completed
+                                        </span>
+                                    {% elif scan.status == 'running' %}
+                                        <span class="badge bg-primary">
+                                            <i class="bi bi-play-circle-fill me-1"></i>Running
+                                        </span>
+                                    {% elif scan.status == 'failed' %}
+                                        <span class="badge bg-danger">
+                                            <i class="bi bi-x-circle-fill me-1"></i>Failed
+                                        </span>
+                                    {% elif scan.status == 'timeout' %}
+                                        <span class="badge bg-warning">
+                                            <i class="bi bi-clock-fill me-1"></i>Timeout
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">{{ scan.status.title() }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if scan.compliance_score is not none %}
+                                        <div class="d-flex align-items-center">
+                                            <span class="badge bg-{{ 'success' if scan.compliance_score >= 80 else 'warning' if scan.compliance_score >= 60 else 'danger' }} me-2">
+                                                {{ scan.compliance_score }}%
+                                            </span>
+                                            <small class="text-muted">
+                                                ({{ scan.passed_checks or 0 }}/{{ scan.total_checks or 0 }})
+                                            </small>
+                                        </div>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if scan.risk_level %}
+                                        <span class="badge bg-{{ 'danger' if scan.risk_level == 'CRITICAL' else 'warning' if scan.risk_level == 'HIGH' else 'info' if scan.risk_level == 'MEDIUM' else 'success' }}">
+                                            {{ scan.risk_level }}
+                                        </span>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <small class="text-muted">
+                                        P: {{ scan.passed_checks or 0 }} |
+                                        F: {{ scan.failed_checks or 0 }} |
+                                        W: {{ scan.warning_checks or 0 }}
+                                    </small>
+                                </td>
+                                <td>
+                                    {% if scan.duration %}
+                                        <span class="badge bg-light text-dark">{{ scan.duration }}s</span>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <small class="text-muted">
+                                        {{ scan.created_at.split(' ')[0] if scan.created_at else '-' }}
+                                        <br>
+                                        {{ scan.created_at.split(' ')[1] if scan.created_at and ' ' in scan.created_at else '' }}
+                                    </small>
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <a href="{{ url_for('scan_status', scan_id=scan.scan_id) }}"
+                                           class="btn btn-outline-primary btn-sm" title="View Details">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        {% if scan.output_file %}
+                                            <a href="{{ url_for('download_result', filename=scan.output_file) }}"
+                                               class="btn btn-outline-secondary btn-sm" title="Download Report">
+                                                <i class="bi bi-download"></i>
+                                            </a>
+                                        {% endif %}
+                                        <button type="button" class="btn btn-outline-danger btn-sm"
+                                                onclick="deleteScan('{{ scan.scan_id }}')" title="Delete Scan">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                <nav aria-label="Scan results pagination" class="mt-4">
+                    <ul class="pagination justify-content-center">
+                        {% set total_pages = (total + per_page - 1) // per_page %}
+                        {% for page_num in range(1, total_pages + 1) %}
+                            <li class="page-item {{ 'active' if page_num == page else '' }}">
+                                <a class="page-link" href="{{ url_for('results', page=page_num) }}">{{ page_num }}</a>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </nav>
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="bi bi-search text-muted" style="font-size: 3rem;"></i>
+                    <h5 class="text-muted mt-3">No scan results found</h5>
+                    <p class="text-muted">Start your first security scan to see results here.</p>
+                    <a href="{{ url_for('scan') }}" class="btn btn-primary">
+                        <i class="bi bi-play-circle-fill me-2"></i>
+                        Start First Scan
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Delete Scan</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete the selected scan(s)? This action cannot be undone.</p>
+                <div id="deleteScanList"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" onclick="confirmDelete()">Delete</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let scansToDelete = [];
+
+// Filter functionality
+document.getElementById('searchInput').addEventListener('input', filterTable);
+document.getElementById('statusFilter').addEventListener('change', filterTable);
+document.getElementById('profileFilter').addEventListener('change', filterTable);
+document.getElementById('riskFilter').addEventListener('change', filterTable);
+
+function filterTable() {
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    const statusFilter = document.getElementById('statusFilter').value;
+    const profileFilter = document.getElementById('profileFilter').value;
+    const riskFilter = document.getElementById('riskFilter').value;
+
+    const rows = document.querySelectorAll('#resultsTable tbody tr');
+
+    rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        const status = row.dataset.status;
+        const profile = row.dataset.profile;
+        const risk = row.dataset.risk;
+
+        const matchesSearch = text.includes(searchTerm);
+        const matchesStatus = !statusFilter || status === statusFilter;
+        const matchesProfile = !profileFilter || profile === profileFilter;
+        const matchesRisk = !riskFilter || risk === riskFilter;
+
+        if (matchesSearch && matchesStatus && matchesProfile && matchesRisk) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+}
+
+function clearFilters() {
+    document.getElementById('searchInput').value = '';
+    document.getElementById('statusFilter').value = '';
+    document.getElementById('profileFilter').value = '';
+    document.getElementById('riskFilter').value = '';
+    filterTable();
+}
+
+// Select all functionality
+document.getElementById('selectAll').addEventListener('change', function() {
+    const checkboxes = document.querySelectorAll('.scan-checkbox');
+    checkboxes.forEach(cb => cb.checked = this.checked);
+});
+
+function deleteScan(scanId) {
+    scansToDelete = [scanId];
+    showDeleteModal();
+}
+
+function deleteSelected() {
+    scansToDelete = Array.from(document.querySelectorAll('.scan-checkbox:checked')).map(cb => cb.value);
+    if (scansToDelete.length === 0) {
+        alert('Please select scans to delete.');
+        return;
+    }
+    showDeleteModal();
+}
+
+function showDeleteModal() {
+    const scanList = scansToDelete.map(id => `<li>${id}</li>`).join('');
+    document.getElementById('deleteScanList').innerHTML = `<ul>${scanList}</ul>`;
+    new bootstrap.Modal(document.getElementById('deleteModal')).show();
+}
+
+function confirmDelete() {
+    // In a real implementation, this would make an API call to delete scans
+    alert('Delete functionality would be implemented here with proper API endpoints.');
+    bootstrap.Modal.getInstance(document.getElementById('deleteModal')).hide();
+}
+
+function exportResults(format) {
+    // In a real implementation, this would trigger a download
+    alert(`Export ${format.toUpperCase()} functionality would be implemented here.`);
+}
+</script>
+{% endblock %}

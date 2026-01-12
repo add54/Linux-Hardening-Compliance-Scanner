@@ -1,0 +1,334 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Linux Security Scanner{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Welcome Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h1 class="card-title mb-2">
+                                <i class="bi bi-shield-check me-2"></i>
+                                Linux Hardening & Compliance Scanner
+                            </h1>
+                            <p class="card-text mb-0">
+                                Comprehensive security auditing and compliance validation for Linux systems
+                            </p>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <a href="{{ url_for('scan') }}" class="btn btn-light btn-lg">
+                                <i class="bi bi-play-circle-fill me-2"></i>
+                                Start New Scan
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col">
+                            <div class="text-muted text-uppercase fw-bold small">Total Scans</div>
+                            <div class="h5 mb-0">{{ stats.total_scans or 0 }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-search text-primary" style="font-size: 2rem;"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col">
+                            <div class="text-muted text-uppercase fw-bold small">Average Score</div>
+                            <div class="h5 mb-0">{{ "%.1f"|format(stats.avg_score or 0) }}%</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-graph-up text-success" style="font-size: 2rem;"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col">
+                            <div class="text-muted text-uppercase fw-bold small">Completed Scans</div>
+                            <div class="h5 mb-0">{{ stats.completed_scans or 0 }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-check-circle-fill text-success" style="font-size: 2rem;"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col">
+                            <div class="text-muted text-uppercase fw-bold small">Critical Issues</div>
+                            <div class="h5 mb-0">{{ stats.critical_scans or 0 }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-exclamation-triangle-fill text-danger" style="font-size: 2rem;"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="row mb-4">
+        <div class="col-xl-8 mb-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-bar-chart-line me-2"></i>
+                        Compliance Score Trend
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="complianceChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-pie-chart me-2"></i>
+                        Risk Distribution
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="riskChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Scans -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-clock-history me-2"></i>
+                        Recent Scans
+                    </h5>
+                    <a href="{{ url_for('results') }}" class="btn btn-outline-primary btn-sm">
+                        View All Results
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if recent_scans %}
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Scan ID</th>
+                                        <th>Profile</th>
+                                        <th>Status</th>
+                                        <th>Score</th>
+                                        <th>Risk Level</th>
+                                        <th>Duration</th>
+                                        <th>Date</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for scan in recent_scans %}
+                                    <tr>
+                                        <td>
+                                            <code class="text-muted">{{ scan.scan_id }}</code>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-secondary">{{ scan.profile }}</span>
+                                        </td>
+                                        <td>
+                                            {% if scan.status == 'completed' %}
+                                                <span class="badge bg-success">Completed</span>
+                                            {% elif scan.status == 'running' %}
+                                                <span class="badge bg-primary">
+                                                    <i class="bi bi-play-circle-fill me-1"></i>Running
+                                                </span>
+                                            {% elif scan.status == 'failed' %}
+                                                <span class="badge bg-danger">Failed</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">{{ scan.status }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if scan.compliance_score is not none %}
+                                                <span class="badge bg-{{ 'success' if scan.compliance_score >= 80 else 'warning' if scan.compliance_score >= 60 else 'danger' }}">
+                                                    {{ scan.compliance_score }}%
+                                                </span>
+                                            {% else %}
+                                                <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if scan.risk_level %}
+                                                <span class="badge bg-{{ 'danger' if scan.risk_level == 'CRITICAL' else 'warning' if scan.risk_level == 'HIGH' else 'info' if scan.risk_level == 'MEDIUM' else 'success' }}">
+                                                    {{ scan.risk_level }}
+                                                </span>
+                                            {% else %}
+                                                <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if scan.duration %}
+                                                {{ scan.duration }}s
+                                            {% else %}
+                                                <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <small class="text-muted">
+                                                {{ scan.created_at.split(' ')[0] if scan.created_at else '-' }}
+                                            </small>
+                                        </td>
+                                        <td>
+                                            <a href="{{ url_for('scan_status', scan_id=scan.scan_id) }}" class="btn btn-outline-primary btn-sm">
+                                                <i class="bi bi-eye me-1"></i>View
+                                            </a>
+                                            {% if scan.output_file %}
+                                                <a href="{{ url_for('download_result', filename=scan.output_file) }}" class="btn btn-outline-secondary btn-sm ms-1">
+                                                    <i class="bi bi-download me-1"></i>Download
+                                                </a>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="bi bi-search text-muted" style="font-size: 3rem;"></i>
+                            <h5 class="text-muted mt-3">No scans yet</h5>
+                            <p class="text-muted">Start your first security scan to see results here.</p>
+                            <a href="{{ url_for('scan') }}" class="btn btn-primary">
+                                <i class="bi bi-play-circle-fill me-2"></i>
+                                Start First Scan
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Compliance Score Trend Chart
+async function loadComplianceChart() {
+    try {
+        const response = await fetch('/api/scans/summary');
+        const data = await response.json();
+
+        const ctx = document.getElementById('complianceChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['Current'],
+                datasets: [{
+                    label: 'Compliance Score',
+                    data: [data.avg_score],
+                    borderColor: 'rgb(75, 192, 192)',
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    tension: 0.1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        ticks: {
+                            callback: function(value) {
+                                return value + '%';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    } catch (error) {
+        console.error('Error loading compliance chart:', error);
+    }
+}
+
+// Risk Distribution Chart
+async function loadRiskChart() {
+    try {
+        const response = await fetch('/api/scans/summary');
+        const data = await response.json();
+
+        const ctx = document.getElementById('riskChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Low', 'Medium', 'High', 'Critical'],
+                datasets: [{
+                    data: [
+                        data.risk_distribution.low,
+                        data.risk_distribution.medium,
+                        data.risk_distribution.high,
+                        data.risk_distribution.critical
+                    ],
+                    backgroundColor: [
+                        'rgb(40, 167, 69)',   // Low - Green
+                        'rgb(255, 193, 7)',   // Medium - Yellow
+                        'rgb(255, 193, 7)',   // High - Orange
+                        'rgb(220, 53, 69)'    // Critical - Red
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    } catch (error) {
+        console.error('Error loading risk chart:', error);
+    }
+}
+
+// Load charts when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    loadComplianceChart();
+    loadRiskChart();
+});
+</script>
+{% endblock %}

@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+
+{% block title %}Settings - Linux Security Scanner{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <h2 class="mb-4">
+                <i class="bi bi-gear me-2"></i>
+                Settings
+            </h2>
+
+            <!-- General Settings -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">General Settings</h5>
+                </div>
+                <div class="card-body">
+                    <form>
+                        <div class="mb-3">
+                            <label for="theme" class="form-label">Theme</label>
+                            <select class="form-select" id="theme">
+                                <option value="light" selected>Light</option>
+                                <option value="dark">Dark</option>
+                                <option value="auto">Auto (System)</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="refreshInterval" class="form-label">Dashboard Refresh Interval</label>
+                            <select class="form-select" id="refreshInterval">
+                                <option value="30">30 seconds</option>
+                                <option value="60" selected>1 minute</option>
+                                <option value="300">5 minutes</option>
+                                <option value="0">Manual only</option>
+                            </select>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">Save Settings</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Scan Defaults -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Scan Defaults</h5>
+                </div>
+                <div class="card-body">
+                    <form>
+                        <div class="mb-3">
+                            <label for="defaultProfile" class="form-label">Default Scan Profile</label>
+                            <select class="form-select" id="defaultProfile">
+                                <option value="filesystem">Filesystem Security</option>
+                                <option value="system">System Validation</option>
+                                <option value="ssh">SSH Hardening</option>
+                                <option value="full" selected>Full Security Audit</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="defaultOutputFormat" class="form-label">Default Output Format</label>
+                            <select class="form-select" id="defaultOutputFormat">
+                                <option value="text" selected>Text</option>
+                                <option value="json">JSON</option>
+                                <option value="csv">CSV</option>
+                            </select>
+                        </div>
+
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="autoRemediation" checked>
+                            <label class="form-check-label" for="autoRemediation">
+                                Enable Auto-Remediation by Default
+                            </label>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">Save Defaults</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Notification Settings -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Notifications</h5>
+                </div>
+                <div class="card-body">
+                    <form>
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="scanCompleteNotification" checked>
+                            <label class="form-check-label" for="scanCompleteNotification">
+                                Notify when scans complete
+                            </label>
+                        </div>
+
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="highRiskNotification" checked>
+                            <label class="form-check-label" for="highRiskNotification">
+                                Notify for high/critical risk findings
+                            </label>
+                        </div>
+
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="remediationNotification">
+                            <label class="form-check-label" for="remediationNotification">
+                                Notify when remediation actions are taken
+                            </label>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">Save Notifications</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Data Management -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Data Management</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Scan Results</h6>
+                            <p class="text-muted small">Manage stored scan results and reports</p>
+                            <button type="button" class="btn btn-outline-danger btn-sm mb-2" onclick="clearOldScans()">
+                                Clear scans older than 30 days
+                            </button>
+                            <br>
+                            <button type="button" class="btn btn-outline-danger btn-sm" onclick="clearAllScans()">
+                                Clear all scan results
+                            </button>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>System</h6>
+                            <p class="text-muted small">System maintenance and diagnostics</p>
+                            <button type="button" class="btn btn-outline-primary btn-sm mb-2" onclick="runDiagnostics()">
+                                Run System Diagnostics
+                            </button>
+                            <br>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="resetSettings()">
+                                Reset to Defaults
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function clearOldScans() {
+    if (confirm('Are you sure you want to delete scan results older than 30 days?')) {
+        alert('This functionality would be implemented with proper API endpoints.');
+    }
+}
+
+function clearAllScans() {
+    if (confirm('Are you sure you want to delete ALL scan results? This action cannot be undone.')) {
+        alert('This functionality would be implemented with proper API endpoints.');
+    }
+}
+
+function runDiagnostics() {
+    alert('Running system diagnostics... This would check scanner components and system compatibility.');
+}
+
+function resetSettings() {
+    if (confirm('Are you sure you want to reset all settings to defaults?')) {
+        // Reset form values
+        document.getElementById('theme').value = 'light';
+        document.getElementById('refreshInterval').value = '60';
+        document.getElementById('defaultProfile').value = 'full';
+        document.getElementById('defaultOutputFormat').value = 'text';
+        document.getElementById('autoRemediation').checked = false;
+        document.getElementById('scanCompleteNotification').checked = true;
+        document.getElementById('highRiskNotification').checked = true;
+        document.getElementById('remediationNotification').checked = false;
+
+        alert('Settings reset to defaults.');
+    }
+}
+</script>
+{% endblock %}
