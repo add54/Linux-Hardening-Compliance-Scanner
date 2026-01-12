@@ -1,0 +1,151 @@
+version: '3.8'
+
+services:
+  # ============================
+  # Production Web Application
+  # ============================
+  scanner-webapp:
+    image: ghcr.io/add54/linux-hardening-compliance-scanner:latest-webapp
+    container_name: linux-scanner-prod-webapp
+    ports:
+      - "80:5000"
+    environment:
+      - FLASK_ENV=production
+      - SCANNER_TIMEOUT=1800
+      - SECRET_KEY=${SECRET_KEY:-change-this-in-production}
+    volumes:
+      - scanner_results:/opt/scanner/results
+      - scanner_logs:/opt/scanner/logs
+      - scanner_uploads:/opt/scanner/uploads
+    networks:
+      - scanner-prod-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/api/scans/summary"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    depends_on:
+      - scanner-db
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.scanner.rule=Host(`scanner.yourdomain.com`)"
+      - "traefik.http.routers.scanner.tls.certresolver=letsencrypt"
+      - "traefik.http.services.scanner.loadbalancer.server.port=5000"
+
+  # ============================
+  # Production Database
+  # ============================
+  scanner-db:
+    image: sqlite3:latest
+    container_name: linux-scanner-prod-db
+    volumes:
+      - scanner_db:/opt/scanner/data
+    networks:
+      - scanner-prod-network
+    command: ["sqlite3", "/opt/scanner/data/scanner.db", ".read /dev/null"]
+    healthcheck:
+      test: ["CMD", "test", "-f", "/opt/scanner/data/scanner.db"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ============================
+  # Redis Cache (Optional)
+  # ============================
+  scanner-redis:
+    image: redis:7-alpine
+    container_name: linux-scanner-prod-redis
+    networks:
+      - scanner-prod-network
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - scanner_redis:/data
+    profiles:
+      - cache
+
+  # ============================
+  # Background Worker (Future)
+  # ============================
+  scanner-worker:
+    image: ghcr.io/add54/linux-hardening-compliance-scanner:latest-webapp
+    container_name: linux-scanner-prod-worker
+    environment:
+      - FLASK_ENV=production
+      - WORKER_MODE=true
+    volumes:
+      - scanner_results:/opt/scanner/results
+      - scanner_logs:/opt/scanner/logs
+    networks:
+      - scanner-prod-network
+    restart: unless-stopped
+    depends_on:
+      - scanner-db
+      - scanner-redis
+    profiles:
+      - worker
+    command: ["python", "run_worker.py"]
+
+  # ============================
+  # Nginx Load Balancer
+  # ============================
+  nginx-lb:
+    image: nginx:alpine
+    container_name: linux-scanner-prod-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/prod.nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+      - scanner_logs:/var/log/nginx
+    networks:
+      - scanner-prod-network
+    restart: unless-stopped
+    depends_on:
+      - scanner-webapp
+    profiles:
+      - loadbalancer
+
+  # ============================
+  # Monitoring (Optional)
+  # ============================
+  scanner-monitoring:
+    image: prom/prometheus:latest
+    container_name: linux-scanner-prod-monitoring
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - scanner_monitoring:/prometheus
+    networks:
+      - scanner-prod-network
+    restart: unless-stopped
+    profiles:
+      - monitoring
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+
+volumes:
+  scanner_db:
+    driver: local
+  scanner_results:
+    driver: local
+  scanner_logs:
+    driver: local
+  scanner_uploads:
+    driver: local
+  scanner_redis:
+    driver: local
+  scanner_monitoring:
+    driver: local
+
+networks:
+  scanner-prod-network:
+    driver: bridge
+    name: linux-scanner-prod-network

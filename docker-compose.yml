@@ -1,0 +1,132 @@
+version: '3.8'
+
+services:
+  # ============================
+  # Main Web Application
+  # ============================
+  scanner-webapp:
+    build:
+      context: .
+      target: webapp
+    container_name: linux-scanner-webapp
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_ENV=development
+      - SCANNER_TIMEOUT=3600
+    volumes:
+      - ./results:/opt/scanner/results
+      - ./logs:/opt/scanner/logs
+    networks:
+      - scanner-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/api/scans/summary"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    depends_on:
+      - scanner-db
+
+  # ============================
+  # CLI Scanner Service
+  # ============================
+  scanner-cli:
+    build:
+      context: .
+      target: scanner-cli
+    container_name: linux-scanner-cli
+    volumes:
+      - ./results:/opt/scanner/results
+      - ./logs:/opt/scanner/logs
+    networks:
+      - scanner-network
+    profiles:
+      - cli
+    command: ["./scanner.sh", "filesystem", "-q"]
+
+  # ============================
+  # Test Environment
+  # ============================
+  scanner-test:
+    build:
+      context: .
+      target: test-env
+    container_name: linux-scanner-test
+    volumes:
+      - ./test-results:/opt/scanner/test-results
+    networks:
+      - scanner-network
+    profiles:
+      - test
+    environment:
+      - PYTEST_DISABLE_PLUGIN_AUTOLOAD=1
+
+  # ============================
+  # Database Service (for future use)
+  # ============================
+  scanner-db:
+    image: sqlite3:latest
+    container_name: linux-scanner-db
+    volumes:
+      - scanner_db:/opt/scanner/data
+    networks:
+      - scanner-network
+    profiles:
+      - db
+    command: ["sqlite3", "/opt/scanner/data/scanner.db", ".read /dev/null"]
+
+  # ============================
+  # Target System for Scanning (Ubuntu)
+  # ============================
+  target-ubuntu:
+    image: ubuntu:22.04
+    container_name: linux-target-ubuntu
+    command: sleep infinity
+    networks:
+      - scanner-network
+    profiles:
+      - target
+    # Add some security issues for testing
+    # This creates a target system with known vulnerabilities
+
+  # ============================
+  # Target System for Scanning (CentOS)
+  # ============================
+  target-centos:
+    image: centos:7
+    container_name: linux-target-centos
+    command: sleep infinity
+    networks:
+      - scanner-network
+    profiles:
+      - target
+
+  # ============================
+  # Nginx Reverse Proxy (for production)
+  # ============================
+  nginx-proxy:
+    image: nginx:alpine
+    container_name: linux-scanner-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - scanner-webapp
+    networks:
+      - scanner-network
+    profiles:
+      - production
+
+volumes:
+  scanner_db:
+    driver: local
+
+networks:
+  scanner-network:
+    driver: bridge
+    name: linux-scanner-network

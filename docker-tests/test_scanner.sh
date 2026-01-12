@@ -3,8 +3,7 @@
 # This script validates the scanner components
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-SCANNER_DIR="$(dirname "${SCRIPT_DIR}")"
-SCANNER="$SCANNER_DIR/scanner.sh"
+SCANNER="$SCRIPT_DIR/scanner.sh"
 
 echo "========================================"
 echo "  Scanner Test Suite"
@@ -14,7 +13,7 @@ echo ""
 # Test 1: Help functionality
 echo "Test 1: Help functionality"
 echo "------------------------"
-if ./scanner.sh --help > /dev/null 2>&1; then
+if bash "$SCANNER" --help > /dev/null 2>&1; then
     echo "✅ Help command works"
 else
     echo "❌ Help command failed"
@@ -24,7 +23,7 @@ echo ""
 # Test 2: Version functionality
 echo "Test 2: Version functionality"
 echo "---------------------------"
-if ./scanner.sh --version > /dev/null 2>&1; then
+if bash "$SCANNER" --version > /dev/null 2>&1; then
     echo "✅ Version command works"
 else
     echo "❌ Version command failed"
@@ -34,12 +33,12 @@ echo ""
 # Test 3: Module loading
 echo "Test 3: Module loading"
 echo "--------------------"
-if [[ -d "$SCANNER_DIR/modules" ]]; then
-    module_count=$(ls "$SCANNER_DIR/modules"/*.sh 2>/dev/null | wc -l)
+if [[ -d "$SCRIPT_DIR/modules" ]]; then
+    module_count=$(ls "$SCRIPT_DIR/modules"/*.sh 2>/dev/null | wc -l)
     echo "✅ Found $module_count modules"
 
     # Check if modules have required functions
-    for module in "$SCANNER_DIR/modules"/*.sh; do
+    for module in "$SCRIPT_DIR/modules"/*.sh; do
         if [[ -f "$module" ]]; then
             module_name=$(basename "$module" .sh)
             echo "  - $module_name.sh: $(grep -c "^check_" "$module") check functions"
@@ -121,8 +120,8 @@ echo ""
 # Test 8: Configuration file structure
 echo "Test 8: Configuration file structure"
 echo "----------------------------------"
-if [[ -d "$SCANNER_DIR/config" ]]; then
-    config_count=$(ls "$SCANNER_DIR/config"/*.json 2>/dev/null | wc -l)
+if [[ -d "$SCRIPT_DIR/config" ]]; then
+    config_count=$(ls "$SCRIPT_DIR/config"/*.json 2>/dev/null | wc -l)
     echo "✅ Found $config_count configuration files"
 else
     echo "❌ Config directory not found"
