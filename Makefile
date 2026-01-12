@@ -9,24 +9,39 @@ help:
 	@echo "===================================="
 	@echo ""
 	@echo "Available commands:"
-	@echo "  build       - Build all Docker images"
-	@echo "  test        - Run all tests"
-	@echo "  docker-test - Run Docker integration tests"
-	@echo "  webapp      - Start web application"
-	@echo "  cli         - Run CLI scanner (usage: make cli PROFILE=filesystem)"
-	@echo "  deploy      - Deploy full stack locally"
-	@echo "  clean       - Clean up Docker resources"
-	@echo "  lint        - Run code linting"
-	@echo "  format      - Format code"
-	@echo "  docs        - Generate documentation"
+	@echo "  build         - Build all Docker images"
+	@echo "  test          - Run all tests"
+	@echo "  docker-test   - Run Docker integration tests"
+	@echo "  webapp        - Start web application"
+	@echo "  cli           - Run CLI scanner (usage: make cli PROFILE=filesystem)"
+	@echo "  deploy        - Deploy full stack locally"
+	@echo "  clean         - Clean up Docker resources"
+	@echo "  lint          - Run code linting"
+	@echo "  format        - Format code"
+	@echo "  docs          - Generate documentation"
+	@echo ""
+	@echo "Docker Development:"
+	@echo "  docker-build  - Build Docker images for development"
+	@echo "  docker-up     - Start development environment"
+	@echo "  docker-down   - Stop development environment"
+	@echo "  docker-logs   - Show development logs"
+	@echo "  docker-cli    - Run CLI scanner in Docker"
+	@echo "  docker-test   - Run tests in Docker"
 	@echo ""
 	@echo "Examples:"
 	@echo "  make build"
 	@echo "  make test"
 	@echo "  make webapp"
-	@echo "  make cli PROFILE=ssh"
+	@echo "  make cli PROFILE=filesystem"
 	@echo "  make deploy"
 	@echo "  make clean"
+	@echo ""
+	@echo "  # Docker development"
+	@echo "  make docker-build"
+	@echo "  make docker-up"
+	@echo "  make docker-cli PROFILE=ssh"
+	@echo "  make docker-test"
+	@echo "  make docker-down"
 
 # Build all Docker images
 build:
@@ -131,6 +146,31 @@ setup:
 	@chmod +x scanner.sh test_scanner.sh run_docker_tests.sh
 	@chmod +x modules/*.sh
 	@echo "✅ Development environment ready!"
+
+# Docker development commands
+docker-build:
+	@echo "🔨 Building Docker images for development..."
+	@docker-compose -f docker-compose.dev.yml build
+
+docker-up:
+	@echo "🚀 Starting development environment..."
+	@docker-compose -f docker-compose.dev.yml up -d scanner-webapp
+
+docker-down:
+	@echo "🛑 Stopping development environment..."
+	@docker-compose -f docker-compose.dev.yml down
+
+docker-logs:
+	@echo "📋 Showing development logs..."
+	@docker-compose -f docker-compose.dev.yml logs -f
+
+docker-cli:
+	@echo "💻 Running CLI scanner..."
+	@docker-compose -f docker-compose.dev.yml --profile cli run --rm scanner-cli
+
+docker-test:
+	@echo "🧪 Running tests in Docker..."
+	@docker-compose -f docker-compose.dev.yml --profile test run --rm scanner-test
 
 # Show system information
 info:

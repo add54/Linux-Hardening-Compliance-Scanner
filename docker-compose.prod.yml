@@ -1,11 +1,12 @@
-version: '3.8'
-
 services:
   # ============================
   # Production Web Application
   # ============================
   scanner-webapp:
-    image: ghcr.io/add54/linux-hardening-compliance-scanner:latest-webapp
+    build:
+      context: .
+      target: webapp
+    image: linux-scanner-webapp:latest
     container_name: linux-scanner-prod-webapp
     ports:
       - "80:5000"
@@ -26,8 +27,6 @@ services:
       timeout: 10s
       retries: 3
       start_period: 60s
-    depends_on:
-      - scanner-db
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.scanner.rule=Host(`scanner.yourdomain.com`)"
@@ -35,21 +34,10 @@ services:
       - "traefik.http.services.scanner.loadbalancer.server.port=5000"
 
   # ============================
-  # Production Database
+  # Production Database (SQLite file-based)
   # ============================
-  scanner-db:
-    image: sqlite3:latest
-    container_name: linux-scanner-prod-db
-    volumes:
-      - scanner_db:/opt/scanner/data
-    networks:
-      - scanner-prod-network
-    command: ["sqlite3", "/opt/scanner/data/scanner.db", ".read /dev/null"]
-    healthcheck:
-      test: ["CMD", "test", "-f", "/opt/scanner/data/scanner.db"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+  # Note: Database is file-based and stored in webapp container
+  # No separate database service needed for SQLite
 
   # ============================
   # Redis Cache (Optional)

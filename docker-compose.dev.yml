@@ -1,0 +1,73 @@
+services:
+  # ============================
+  # Development Web Application
+  # ============================
+  scanner-webapp:
+    build:
+      context: .
+      target: webapp
+    container_name: linux-scanner-dev-webapp
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_ENV=development
+      - SCANNER_TIMEOUT=3600
+    volumes:
+      - ./results:/opt/scanner/results
+      - ./logs:/opt/scanner/logs
+      - ./uploads:/opt/scanner/uploads
+    networks:
+      - scanner-dev-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/api/scans/summary"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # ============================
+  # Development CLI Scanner
+  # ============================
+  scanner-cli:
+    build:
+      context: .
+      target: scanner-cli
+    container_name: linux-scanner-dev-cli
+    volumes:
+      - ./results:/opt/scanner/results
+      - ./logs:/opt/scanner/logs
+    networks:
+      - scanner-dev-network
+    profiles:
+      - cli
+    command: ["./scanner.sh", "filesystem", "-q"]
+
+  # ============================
+  # Development Test Environment
+  # ============================
+  scanner-test:
+    build:
+      context: .
+      target: test-env
+    container_name: linux-scanner-dev-test
+    volumes:
+      - ./test-results:/opt/scanner/test-results
+    networks:
+      - scanner-dev-network
+    profiles:
+      - test
+    command: ["./tests/test_scanner.sh"]
+
+volumes:
+  scanner_results:
+    driver: local
+  scanner_logs:
+    driver: local
+  scanner_uploads:
+    driver: local
+
+networks:
+  scanner-dev-network:
+    driver: bridge
+    name: linux-scanner-dev-network
