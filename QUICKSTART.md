@@ -7,6 +7,7 @@ Get the Linux Hardening & Compliance Scanner running in minutes!
 - **Docker & Docker Compose** (recommended)
 - **Python 3.6+** (alternative method)
 - **Git**
+- **Windows**: PowerShell 5.1+ or Command Prompt
 
 ## Method 1: Docker (Recommended)
 
@@ -146,13 +147,59 @@ docker-compose -f docker-compose.dev.yml build --no-cache
 - `system` - System file validation
 - `full` - Complete security audit
 
+## 🪟 Windows-Specific Instructions
+
+### Using PowerShell (Recommended)
+```powershell
+# Build and start
+.\run.ps1 -Command docker-build
+.\run.ps1 -Command docker-up
+
+# Run scans
+.\run.ps1 -Command docker-cli -Profile filesystem
+.\run.ps1 -Command docker-test
+
+# Stop everything
+.\run.ps1 -Command docker-down
+```
+
+### Using Command Prompt
+```batch
+# Build and start
+run.bat docker-build
+run.bat docker-up
+
+# Run scans
+run.bat docker-cli filesystem
+run.bat docker-test
+
+# Stop everything
+run.bat docker-down
+```
+
+### Alternative: Direct Docker Commands
+```batch
+# Build images
+docker-compose -f docker-compose.dev.yml build
+
+# Start webapp
+docker-compose -f docker-compose.dev.yml up -d scanner-webapp
+
+# Run CLI scan
+docker-compose -f docker-compose.dev.yml --profile cli run --rm scanner-cli
+
+# Stop everything
+docker-compose -f docker-compose.dev.yml down
+```
+
 ## 📝 Next Steps
 
-- Explore the web interface
-- Run different scan profiles
-- View historical results
+- Explore the web interface at `http://localhost:5000`
+- Run different scan profiles (filesystem, ssh, system, full)
+- View historical results and download reports
 - Customize scan configurations
-- Set up automated scanning
+- Set up automated scanning with cron jobs
+- Review the comprehensive documentation in `README.md`
 
 ## 🆘 Need Help?
 
