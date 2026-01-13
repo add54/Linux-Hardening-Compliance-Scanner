@@ -1,0 +1,89 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: scanner-worker
+  namespace: linux-scanner
+  labels:
+    app: linux-hardening-compliance-scanner
+    component: scanner
+    version: v1.0.0
+spec:
+  replicas: 1  # Single replica for scanner (can be scaled as needed)
+  selector:
+    matchLabels:
+      app: linux-hardening-compliance-scanner
+      component: scanner
+  template:
+    metadata:
+      labels:
+        app: linux-hardening-compliance-scanner
+        component: scanner
+        version: v1.0.0
+    spec:
+      containers:
+      - name: scanner
+        image: ghcr.io/add54/linux-hardening-compliance-scanner:latest-scanner-cli
+        imagePullPolicy: Always
+        command: ["/bin/bash", "-c", "sleep infinity"]  # Keep container running for job execution
+        env:
+        # Configuration from ConfigMap
+        - name: SCANNER_TIMEOUT
+          valueFrom:
+            configMapKeyRef:
+              name: scanner-config
+              key: SCANNER_TIMEOUT
+        - name: SCANNER_VERBOSE
+          valueFrom:
+            configMapKeyRef:
+              name: scanner-config
+              key: SCANNER_VERBOSE
+        - name: LOG_LEVEL
+          valueFrom:
+            configMapKeyRef:
+              name: scanner-config
+              key: LOG_LEVEL
+
+        # Resource limits (scanner can be resource intensive)
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "50m"
+          limits:
+            memory: "512Mi"
+            cpu: "200m"
+
+        # Volume mounts
+        volumeMounts:
+        - name: scanner-data
+          mountPath: /app/data
+        - name: scanner-logs
+          mountPath: /app/logs
+        - name: scanner-uploads
+          mountPath: /app/uploads
+
+      # Volumes
+      volumes:
+      - name: scanner-data
+        persistentVolumeClaim:
+          claimName: scanner-data-pvc
+      - name: scanner-logs
+        persistentVolumeClaim:
+          claimName: scanner-logs-pvc
+      - name: scanner-uploads
+        persistentVolumeClaim:
+          claimName: scanner-uploads-pvc
+
+      # Security context
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+        # Allow privileged access for security scanning
+        privileged: true  # Required for filesystem access in containers
+
+      # Tolerations (optional - for running on specific nodes)
+      # tolerations:
+      # - key: "scanner"
+      #   operator: "Equal"
+      #   value: "true"
+      #   effect: "NoSchedule"

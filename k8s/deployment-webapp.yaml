@@ -1,0 +1,152 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: scanner-webapp
+  namespace: linux-scanner
+  labels:
+    app: linux-hardening-compliance-scanner
+    component: webapp
+    version: v1.0.0
+spec:
+  replicas: 2  # High availability with 2 replicas
+  selector:
+    matchLabels:
+      app: linux-hardening-compliance-scanner
+      component: webapp
+  template:
+    metadata:
+      labels:
+        app: linux-hardening-compliance-scanner
+        component: webapp
+        version: v1.0.0
+    spec:
+      containers:
+      - name: webapp
+        image: ghcr.io/add54/linux-hardening-compliance-scanner:latest-webapp
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 5000
+          name: http
+          protocol: TCP
+        env:
+        # Configuration from ConfigMap
+        - name: FLASK_ENV
+          valueFrom:
+            configMapKeyRef:
+              name: scanner-config
+              key: FLASK_ENV
+        - name: FLASK_DEBUG
+          valueFrom:
+            configMapKeyRef:
+              name: scanner-config
+              key: FLASK_DEBUG
+        - name: SECRET_KEY
+          valueFrom:
+            configMapKeyRef:
+              name: scanner-config
+              key: SECRET_KEY
+        - name: SCANNER_TIMEOUT
+          valueFrom:
+            configMapKeyRef:
+              name: scanner-config
+              key: SCANNER_TIMEOUT
+        - name: LOG_LEVEL
+          valueFrom:
+            configMapKeyRef:
+              name: scanner-config
+              key: LOG_LEVEL
+
+        # Secrets
+        - name: DATABASE_KEY
+          valueFrom:
+            secretKeyRef:
+              name: scanner-secrets
+              key: DATABASE_KEY
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: scanner-secrets
+              key: JWT_SECRET
+        - name: SESSION_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: scanner-secrets
+              key: SESSION_SECRET
+
+        # Runtime environment
+        - name: KUBERNETES_ENV
+          value: "true"
+
+        # Resource limits
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+
+        # Health checks
+        livenessProbe:
+          httpGet:
+            path: /api/scans/summary
+            port: 5000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+
+        readinessProbe:
+          httpGet:
+            path: /api/scans/summary
+            port: 5000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+
+        # Volume mounts
+        volumeMounts:
+        - name: scanner-data
+          mountPath: /app/data
+        - name: scanner-logs
+          mountPath: /app/logs
+        - name: scanner-uploads
+          mountPath: /app/uploads
+
+      # Volumes
+      volumes:
+      - name: scanner-data
+        persistentVolumeClaim:
+          claimName: scanner-data-pvc
+      - name: scanner-logs
+        persistentVolumeClaim:
+          claimName: scanner-logs-pvc
+      - name: scanner-uploads
+        persistentVolumeClaim:
+          claimName: scanner-uploads-pvc
+
+      # Security context
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+
+      # Node selector (optional)
+      # nodeSelector:
+      #   kubernetes.io/os: linux
+      #   node-type: scanner-node
+
+      # Affinity rules (optional)
+      # affinity:
+      #   podAntiAffinity:
+      #     preferredDuringSchedulingIgnoredDuringExecution:
+      #     - weight: 100
+      #       podAffinityTerm:
+      #         labelSelector:
+      #           matchExpressions:
+      #           - key: app
+      #             operator: In
+      #             values:
+      #             - linux-hardening-compliance-scanner
+      #         topologyKey: kubernetes.io/hostname

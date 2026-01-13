@@ -17,6 +17,7 @@ A comprehensive PowerShell-based security scanner for Linux systems that perform
 - [Compliance Profiles](#compliance-profiles)
 - [Output Formats](#output-formats)
 - [Docker Usage](#docker-usage)
+- [Kubernetes Deployment](#kubernetes-deployment)
 - [Testing](#testing)
 - [Contributing](#contributing)
 - [Troubleshooting](#troubleshooting)
@@ -344,6 +345,83 @@ docker-compose up scanner
 # Run scheduled scans
 docker-compose up -d scheduler
 ```
+
+## 🚢 Kubernetes Deployment
+
+Deploy the scanner on Kubernetes clusters for production environments with high availability, scaling, and automated operations.
+
+### Quick Start with Helm
+
+```bash
+# Install with Helm (recommended)
+helm install linux-scanner ./helm/linux-scanner \
+  --set global.domain=scanner.yourdomain.com \
+  --create-namespace
+
+# Access at https://scanner.yourdomain.com
+```
+
+### Manual Deployment with kubectl
+
+```bash
+# Deploy all components
+kubectl apply -f k8s/
+
+# Check status
+kubectl get pods -n linux-scanner
+
+# Access the web interface
+kubectl get ingress -n linux-scanner
+```
+
+### Architecture
+
+- **Web Application**: Flask app with REST API (2 replicas with HPA)
+- **Scanner Worker**: Background security scanning (1 replica)
+- **Scheduled Jobs**: CronJobs for automated daily/weekly scans
+- **Persistent Storage**: PVCs for data, logs, and results
+- **Ingress**: External access with SSL termination
+- **Auto-scaling**: Horizontal Pod Autoscaler for webapp
+
+### Features
+
+- ✅ **High Availability**: Multi-replica deployments with PDBs
+- ✅ **Auto-scaling**: HPA based on CPU/memory usage
+- ✅ **Persistent Storage**: Data survives pod restarts
+- ✅ **SSL/TLS**: Automatic certificates via cert-manager
+- ✅ **Scheduled Scans**: Automated security assessments
+- ✅ **Security Policies**: NetworkPolicies and RBAC
+- ✅ **Monitoring**: Prometheus metrics and health checks
+
+### Production Configuration
+
+```yaml
+# values.yaml overrides for production
+webapp:
+  replicaCount: 3
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+
+ingress:
+  enabled: true
+  hosts:
+    - scanner.yourcompany.com
+
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 10
+
+persistence:
+  data:
+    size: 50Gi
+  logs:
+    size: 10Gi
+```
+
+For complete Kubernetes deployment guide, see [`KUBERNETES_DEPLOYMENT.md`](KUBERNETES_DEPLOYMENT.md).
 
 ## 🧪 Testing
 

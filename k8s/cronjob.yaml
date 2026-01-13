@@ -1,0 +1,158 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: scanner-scheduled-scan
+  namespace: linux-scanner
+  labels:
+    app: linux-hardening-compliance-scanner
+    component: cronjob
+spec:
+  # Run daily at 2 AM
+  schedule: "0 2 * * *"
+  # Allow concurrent jobs (don't skip if previous is still running)
+  concurrencyPolicy: Allow
+  # Keep 7 days of job history
+  successfulJobsHistoryLimit: 7
+  failedJobsHistoryLimit: 7
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: linux-hardening-compliance-scanner
+            component: cronjob
+            job-type: scheduled-scan
+        spec:
+          restartPolicy: OnFailure
+          containers:
+          - name: scanner-job
+            image: ghcr.io/add54/linux-hardening-compliance-scanner:latest-scanner-cli
+            imagePullPolicy: Always
+            command:
+            - /bin/bash
+            - -c
+            - |
+              echo "Starting scheduled security scan..."
+              ./scanner.sh full -q --output-format json --output-file /app/results/scheduled-scan-$(date +%Y%m%d-%H%M%S).json
+              echo "Scheduled scan completed."
+            env:
+            - name: SCANNER_TIMEOUT
+              valueFrom:
+                configMapKeyRef:
+                  name: scanner-config
+                  key: SCANNER_TIMEOUT
+            - name: LOG_LEVEL
+              valueFrom:
+                configMapKeyRef:
+                  name: scanner-config
+                  key: LOG_LEVEL
+            resources:
+              requests:
+                memory: "256Mi"
+                cpu: "100m"
+              limits:
+                memory: "512Mi"
+                cpu: "300m"
+            volumeMounts:
+            - name: scanner-data
+              mountPath: /app/data
+            - name: scanner-logs
+              mountPath: /app/logs
+            - name: scanner-results
+              mountPath: /app/results
+          volumes:
+          - name: scanner-data
+            persistentVolumeClaim:
+              claimName: scanner-data-pvc
+          - name: scanner-logs
+            persistentVolumeClaim:
+              claimName: scanner-logs-pvc
+          - name: scanner-results
+            persistentVolumeClaim:
+              claimName: scanner-uploads-pvc  # Reuse uploads PVC for results
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            privileged: true  # Required for filesystem scanning
+
+---
+# Additional CronJob for weekly comprehensive scan
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: scanner-weekly-deep-scan
+  namespace: linux-scanner
+  labels:
+    app: linux-hardening-compliance-scanner
+    component: cronjob
+    scan-type: deep
+spec:
+  # Run weekly on Sunday at 3 AM
+  schedule: "0 3 * * 0"
+  concurrencyPolicy: Forbid  # Skip if previous is still running
+  successfulJobsHistoryLimit: 4
+  failedJobsHistoryLimit: 4
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: linux-hardening-compliance-scanner
+            component: cronjob
+            job-type: deep-scan
+        spec:
+          restartPolicy: OnFailure
+          containers:
+          - name: deep-scan-job
+            image: ghcr.io/add54/linux-hardening-compliance-scanner:latest-scanner-cli
+            imagePullPolicy: Always
+            command:
+            - /bin/bash
+            - -c
+            - |
+              echo "Starting weekly deep security scan..."
+              # Run all profiles
+              for profile in filesystem ssh system full; do
+                echo "Running $profile scan..."
+                ./scanner.sh $profile -q --output-format json --output-file /app/results/weekly-$profile-$(date +%Y%m%d).json
+              done
+              echo "Weekly deep scan completed."
+            env:
+            - name: SCANNER_TIMEOUT
+              valueFrom:
+                configMapKeyRef:
+                  name: scanner-config
+                  key: SCANNER_TIMEOUT
+            - name: SCANNER_VERBOSE
+              valueFrom:
+                configMapKeyRef:
+                  name: scanner-config
+                  key: SCANNER_VERBOSE
+            resources:
+              requests:
+                memory: "512Mi"
+                cpu: "200m"
+              limits:
+                memory: "1Gi"
+                cpu: "500m"
+            volumeMounts:
+            - name: scanner-data
+              mountPath: /app/data
+            - name: scanner-logs
+              mountPath: /app/logs
+            - name: scanner-results
+              mountPath: /app/results
+          volumes:
+          - name: scanner-data
+            persistentVolumeClaim:
+              claimName: scanner-data-pvc
+          - name: scanner-logs
+            persistentVolumeClaim:
+              claimName: scanner-logs-pvc
+          - name: scanner-results
+            persistentVolumeClaim:
+              claimName: scanner-uploads-pvc
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            privileged: true

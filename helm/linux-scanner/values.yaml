@@ -1,0 +1,216 @@
+# Default values for linux-scanner Helm chart
+# This file contains all configurable values for the Linux Hardening & Compliance Scanner
+
+# Global settings
+global:
+  # Domain name for ingress
+  domain: scanner.yourdomain.com
+
+  # Environment (development, staging, production)
+  environment: production
+
+  # Image registry and repository
+  imageRegistry: ghcr.io
+  imageRepository: add54/linux-hardening-compliance-scanner
+  imageTag: latest
+  imagePullPolicy: Always
+
+# Namespace settings
+namespace:
+  create: true
+  name: linux-scanner
+
+# Web Application Deployment
+webapp:
+  enabled: true
+  replicaCount: 2
+
+  image:
+    repository: ghcr.io/add54/linux-hardening-compliance-scanner
+    tag: latest-webapp
+    pullPolicy: Always
+
+  service:
+    type: ClusterIP
+    port: 80
+    targetPort: 5000
+    annotations: {}
+
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "100m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+
+  # Environment variables
+  env:
+    FLASK_ENV: "production"
+    FLASK_DEBUG: "false"
+    SCANNER_TIMEOUT: "1800"
+    LOG_LEVEL: "INFO"
+
+  # Secrets (override these in production)
+  secrets:
+    SECRET_KEY: "change-this-in-production"
+    DATABASE_KEY: "change-this-in-production"
+    JWT_SECRET: "change-this-in-production"
+    SESSION_SECRET: "change-this-in-production"
+    API_KEY: "change-this-in-production"
+
+  # Health checks
+  healthCheck:
+    enabled: true
+    path: "/api/scans/summary"
+    port: 5000
+    initialDelaySeconds: 30
+    periodSeconds: 10
+
+# Scanner Worker Deployment
+scanner:
+  enabled: true
+  replicaCount: 1
+
+  image:
+    repository: ghcr.io/add54/linux-hardening-compliance-scanner
+    tag: latest-scanner-cli
+    pullPolicy: Always
+
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "50m"
+    limits:
+      memory: "512Mi"
+      cpu: "200m"
+
+  # Security context
+  securityContext:
+    privileged: true  # Required for filesystem scanning
+    runAsNonRoot: true
+    runAsUser: 1000
+    fsGroup: 1000
+
+# Scheduled Scans (CronJobs)
+cronjobs:
+  # Daily scan
+  daily:
+    enabled: true
+    schedule: "0 2 * * *"  # Daily at 2 AM
+    profile: "filesystem"
+    concurrencyPolicy: Allow
+
+  # Weekly deep scan
+  weekly:
+    enabled: true
+    schedule: "0 3 * * 0"  # Sunday at 3 AM
+    profiles: ["filesystem", "ssh", "system", "full"]
+    concurrencyPolicy: Forbid
+
+# Persistence settings
+persistence:
+  enabled: true
+
+  # Data storage
+  data:
+    enabled: true
+    size: 10Gi
+    storageClass: standard
+    accessMode: ReadWriteOnce
+
+  # Logs storage
+  logs:
+    enabled: true
+    size: 5Gi
+    storageClass: standard
+    accessMode: ReadWriteOnce
+
+  # Uploads/Results storage
+  uploads:
+    enabled: true
+    size: 2Gi
+    storageClass: standard
+    accessMode: ReadWriteOnce
+
+# Ingress configuration
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+
+  hosts:
+    - host: scanner.yourdomain.com
+      paths:
+        - path: /
+          pathType: Prefix
+          service:
+            name: scanner-webapp-service
+            port:
+              number: 80
+        - path: /api
+          pathType: Prefix
+          service:
+            name: scanner-api-service
+            port:
+              number: 80
+
+  tls:
+    - secretName: scanner-tls
+      hosts:
+        - scanner.yourdomain.com
+
+# Autoscaling
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+
+# Pod Disruption Budget
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+
+# Network Policies
+networkPolicy:
+  enabled: true
+
+# Service Monitor (for Prometheus)
+serviceMonitor:
+  enabled: false
+  namespace: monitoring
+  interval: 30s
+  scrapeTimeout: 10s
+
+# Resource quotas
+resourceQuota:
+  enabled: false
+  requests:
+    cpu: "2"
+    memory: "4Gi"
+  limits:
+    cpu: "4"
+    memory: "8Gi"
+
+# Node selectors and tolerations
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+# Additional labels and annotations
+commonLabels: {}
+commonAnnotations: {}
+
+# External dependencies
+ingress-nginx:
+  enabled: false
+
+cert-manager:
+  enabled: false

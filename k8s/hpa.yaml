@@ -1,0 +1,64 @@
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: scanner-webapp-hpa
+  namespace: linux-scanner
+  labels:
+    app: linux-hardening-compliance-scanner
+    component: hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: scanner-webapp
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+  # CPU utilization target
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  # Memory utilization target
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+
+---
+# PodDisruptionBudget to ensure availability during cluster maintenance
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: scanner-webapp-pdb
+  namespace: linux-scanner
+  labels:
+    app: linux-hardening-compliance-scanner
+    component: pdb
+spec:
+  minAvailable: 1  # Always keep at least 1 pod running
+  selector:
+    matchLabels:
+      app: linux-hardening-compliance-scanner
+      component: webapp
+
+---
+# PodDisruptionBudget for scanner worker
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: scanner-worker-pdb
+  namespace: linux-scanner
+  labels:
+    app: linux-hardening-compliance-scanner
+    component: pdb
+spec:
+  minAvailable: 50%  # Keep at least 50% of scanner pods running
+  selector:
+    matchLabels:
+      app: linux-hardening-compliance-scanner
+      component: scanner

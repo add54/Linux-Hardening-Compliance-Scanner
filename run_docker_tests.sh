@@ -1,3 +1,4 @@
+
 #!/bin/bash
 # Run Docker Tests for Linux Hardening & Compliance Scanner
 # This script provides easy commands to test the scanner in Docker

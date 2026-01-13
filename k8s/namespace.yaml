@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: linux-scanner
+  labels:
+    name: linux-scanner
+    app: linux-hardening-compliance-scanner
+    environment: production
+  annotations:
+    description: "Namespace for Linux Hardening & Compliance Scanner"
